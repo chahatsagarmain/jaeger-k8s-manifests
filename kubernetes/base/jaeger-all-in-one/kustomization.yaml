@@ -1,0 +1,40 @@
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: example-hotrod
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/-
+        value:
+          name: jaeger
+          image: jaegertracing/all-in-one:latest
+          ports:
+            - containerPort: 6831
+              name: jaeger-udp
+            - containerPort: 16686
+              name: jaeger-ui
+            - containerPort: 14268
+              name: jaeger-http
+          env:
+            - name: METRICS_STORAGE_TYPE
+              value: prometheus
+            - name: PROMETHEUS_SERVER_URL
+              value: "http://prometheus:9090"
+            - name: PROMETHEUS_QUERY_NORMALIZE_CALLS
+              value: "true"
+            - name: PROMETHEUS_QUERY_NORMALIZE_DURATION
+              value: "true"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+    
+
+
+resources:
+      - service.yaml

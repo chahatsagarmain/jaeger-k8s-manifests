@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-hotrod
+---
+apiVersion: v1
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: aggregated-trace-metrics
+        static_configs:
+          - targets: ['jaeger-metrics.example-hotrod.svc.cluster.local:8889']
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: example-hotrod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-hotrod
+  namespace: example-hotrod
+spec:
+  ports:
+  - name: frontend
+    port: 8080
+    protocol: TCP
+    targetPort: frontend
+  selector:
+    app: example-hotrod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: example-hotrod
+spec:
+  ports:
+  - name: jaeger-ui
+    nodePort: 31670
+    port: 16686
+    protocol: TCP
+    targetPort: 16686
+  - name: otlp-http
+    nodePort: 30418
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
+  - name: otlp-grpc
+    nodePort: 30417
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  selector:
+    app: example-hotrod
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-metrics
+  namespace: example-hotrod
+spec:
+  ports:
+  - name: metrics
+    port: 8889
+    protocol: TCP
+    targetPort: 8889
+  selector:
+    app: example-hotrod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: example-hotrod
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: prometheus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: example-hotrod
+  name: example-hotrod
+  namespace: example-hotrod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-hotrod
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: example-hotrod
+    spec:
+      containers:
+      - args:
+        - all
+        env:
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://localhost:4318
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: "true"
+        image: jaegertracing/example-hotrod:latest
+        name: example-hotrod
+        ports:
+        - containerPort: 8080
+          name: frontend
+        - containerPort: 8081
+          name: customer
+        - containerPort: 8083
+          name: route
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      - args:
+        - --metrics-backend=prometheus
+        env:
+        - name: METRICS_STORAGE_TYPE
+          value: prometheus
+        - name: PROMETHEUS_SERVER_URL
+          value: http://prometheus:9090
+        - name: PROMETHEUS_QUERY_NORMALIZE_CALLS
+          value: "true"
+        - name: PROMETHEUS_QUERY_NORMALIZE_DURATION
+          value: "true"
+        - name: METRICS_PROMETHEUS_PORT
+          value: "8889"
+        - name: METRICS_PROMETHEUS_HOST
+          value: 0.0.0.0
+        image: jaegertracing/all-in-one:latest
+        name: jaeger
+        ports:
+        - containerPort: 16686
+          name: jaeger-ui
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 4317
+          name: otlp-grpc
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: example-hotrod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - args:
+        - --config.file=/etc/prometheus/prometheus.yml
+        image: prom/prometheus:latest
+        name: prometheus
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - mountPath: /etc/prometheus/
+          name: prometheus-config-volume
+      volumes:
+      - configMap:
+          name: prometheus-config
+        name: prometheus-config-volume
