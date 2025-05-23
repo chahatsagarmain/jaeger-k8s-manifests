@@ -5,4 +5,5 @@ resources:
   - deployment.yaml
   - service-hotrod.yaml
   - service-jaeger.yaml
+  - service-otel.yaml
   - deploy-otel.yaml

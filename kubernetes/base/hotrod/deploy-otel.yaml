@@ -16,16 +16,20 @@ spec:
       containers:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:0.112.0
-          command:
-            - "/otelcol-contrib"
-            - "--config=/etc/otelcol/config.yaml"
+          args:
+            - "--config=/etc/otelcol/otel-collector-config.yaml"
           volumeMounts:
             - name: otel-config
-              mountPath: /etc/otelcol/
+              mountPath: /etc/otelcol/otel-collector-config.yaml
+              subPath: otel-collector-config.yaml
               readOnly: true
           ports:
             - containerPort: 8889
               name: metrics
+            - containerPort: 4318
+              name: otlp-http
+            - containerPort: 4317
+              name: otlp-grpc
       volumes:
         - name: otel-config
           configMap:

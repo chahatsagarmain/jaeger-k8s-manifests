@@ -20,7 +20,7 @@ spec:
         - all
         env:
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: http://localhost:4318
+          value: "http://otel-collector:4318"
         - name: OTEL_EXPORTER_OTLP_INSECURE
           value: "true"
         image: jaegertracing/example-hotrod:latest
