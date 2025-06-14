@@ -1,0 +1,47 @@
+allInOne:
+  enabled: false
+
+collector:
+  enabled: true
+  image:
+    tag: latest
+  service:
+    type: ClusterIP
+    otlp:
+      grpc:
+        name: otlp-grpc
+        port: 4317
+      http:
+        name: otlp-http
+        port: 4318
+
+storage:
+  type: memory
+
+query:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 16686
+  options:
+    log-level: debug
+
+agent:
+  enabled: false
+
+provisionDataStore:
+  cassandra: false
+  elasticsearch: false
+
+storage:
+  type: memory
+
+hotrod:
+  enabled: true
+  extraArgs:
+    - --otel-exporter=otlp
+  extraEnv:
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: http://jaeger-test-collector.observability.svc.cluster.local:4318
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: http/protobuf
