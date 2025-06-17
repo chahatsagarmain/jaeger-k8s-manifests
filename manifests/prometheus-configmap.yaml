@@ -6,9 +6,10 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
+      scrape_interval:     15s
       evaluation_interval: 15s
+
     scrape_configs:
       - job_name: aggregated-trace-metrics
         static_configs:
-          - targets: ['otel-collector:8889']
+          - targets: ['jaeger.example-hotrod.svc.cluster.local:8889']
