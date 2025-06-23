@@ -1,18 +1,19 @@
-allInOne:
-  enabled: false
-
 collector:
   enabled: true
   image:
     tag: latest
+  extraConfigmapMounts:
+    - name: jaeger-config
+      mountPath: /etc/jaeger/config.yml
+      subPath: config.yml
+      configMap: jaeger-config
+  cmdlineParams:
+    config-file: /etc/jaeger/config.yml
+  serviceMonitor:
+    enabled: true
+    interval: 15s
   service:
     type: ClusterIP
-    # Define the main collector ports
-    grpc:
-      port: 14250
-    http:
-      port: 14268
-    # OTLP ports configuration
     otlp:
       grpc:
         name: otlp-grpc
@@ -52,7 +53,9 @@ hotrod:
     - --otel-exporter=otlp
   extraEnv:
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: http://jaeger-test-collector.observability.svc.cluster.local:4318
+      value: http://jaeger-test-collector:4318
+    - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+      value: http://jaeger-test-collector:4318/v1/traces
     - name: OTEL_EXPORTER_OTLP_PROTOCOL
       value: http/protobuf
     - name: OTEL_SERVICE_NAME
