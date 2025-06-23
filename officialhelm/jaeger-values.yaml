@@ -26,14 +26,16 @@ collector:
     - name: COLLECTOR_OTLP_ENABLED
       value: "true"
     - name: SPAN_STORAGE_TYPE
-      value: memory
+      value: elasticsearch
+
+provisionDataStore:
+  elasticsearch: true
+  cassandra: false
+
 
 storage:
-  type: memory
-  options:
-    memory:
-      max-traces: 100000
-
+  type: elasticsearch
+  
 query:
   enabled: true
   image:
